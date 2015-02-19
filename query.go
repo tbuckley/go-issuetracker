@@ -39,6 +39,10 @@ type Feed struct {
 	Entries      []Entry  `xml:"entry"`
 }
 
+func (f Feed) NumPages() int {
+	return int(math.Ceil(float64(f.TotalResults) / float64(f.ItemsPerPage)))
+}
+
 type Query struct {
 	project string
 	client  *http.Client
@@ -196,12 +200,12 @@ func (q *Query) FetchAllIssues() ([]Entry, error) {
 	}
 
 	// Get results for all additional pages
-	numPages := int(math.Ceil(float64(result.Feed.TotalResults) / float64(q.limit)))
+	numPages := result.Feed.NumPages()
 	queries := make([]*Query, numPages-1)
 	for i := 1; i < numPages; i++ {
 		queries[i-1] = q.Offset(i * q.limit)
 	}
-	results := <-workGroup.AddTasksUnordered(queries)
+	results := <-workGroup.AddTasks(queries)
 
 	// Merge the entries together
 	results = append(results, result)
@@ -215,4 +219,8 @@ func (q *Query) FetchAllIssues() ([]Entry, error) {
 	}
 
 	return entries, nil
+}
+
+func (q *Query) FetchChangesForRange(start, end time.Time, duration time.Duration) {
+
 }

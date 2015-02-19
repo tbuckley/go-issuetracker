@@ -64,24 +64,23 @@ func (g *WorkGroup) AddTask(query *Query) chan *Result {
 	return resultChan
 }
 
-func (g *WorkGroup) AddTasksUnordered(queries []*Query) chan []*Result {
+func (g *WorkGroup) AddTasks(queries []*Query) chan []*Result {
 	multiResultChan := make(chan []*Result)
 
-	wg := new(sync.WaitGroup)
-	resultChan := make(chan *Result)
+	go func() {
+		wg := new(sync.WaitGroup)
 
-	go func() {
-		for _, query := range queries {
+		results := make([]*Result, len(queries))
+		for i, query := range queries {
 			wg.Add(1)
-			g.AddTaskWithOutput(query, resultChan)
+			go func(i int, query *Query) {
+				results[i] = <-g.AddTask(query)
+				wg.Done()
+			}(i, query)
 		}
-	}()
-	go func() {
-		results := make([]*Result, 0, len(queries))
-		for len(results) < len(queries) {
-			result := <-resultChan
-			results = append(results, result)
-		}
+
+		wg.Wait()
+
 		multiResultChan <- results
 	}()
 
