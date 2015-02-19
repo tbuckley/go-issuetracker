@@ -2,14 +2,12 @@ package main
 
 import (
 	"encoding/xml"
-	"fmt"
 	"io/ioutil"
 	"math"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 )
 
@@ -165,52 +163,6 @@ func (q *Query) URL() string {
 	return u.String()
 }
 
-func (q *Query) FetchAllIssues() ([]Entry, error) {
-	entries := make([]Entry, 0)
-	wg := new(sync.WaitGroup)
-
-	// Create 10 goroutines to handle queries
-	queryChan, resultChan := StartQueryFetchers(10)
-
-	// Handle results as they come in
-	go func() {
-		for result := range resultChan {
-			if result.Error != nil {
-				fmt.Printf("Error: %v\n", result.Error.Error())
-			} else {
-				for _, entry := range result.Feed.Entries {
-					entries = append(entries, entry)
-				}
-			}
-			wg.Done()
-		}
-	}()
-
-	// Fetch the first page
-	feed, err := q.FetchPage()
-	if err != nil {
-		close(queryChan)
-		return nil, err
-	}
-	wg.Add(1)
-	resultChan <- &Result{
-		Query: q,
-		Feed:  feed,
-	}
-
-	// Add a query for all additional pages
-	pages := math.Ceil(float64(feed.TotalResults) / float64(q.limit))
-	for i := 1; i < int(pages); i++ {
-		wg.Add(1)
-		queryChan <- q.Offset(i * q.limit)
-	}
-	close(queryChan)
-
-	wg.Wait()
-
-	return entries, nil
-}
-
 func (q *Query) FetchPage() (*Feed, error) {
 	client := http.DefaultClient
 	if q.client != nil {
@@ -232,22 +184,35 @@ func (q *Query) FetchPage() (*Feed, error) {
 	return feed, err
 }
 
-func main() {
-	q := NewQuery("chromium").Open().Limit(25)
-	q = q.Label("cr-ui-settings")
-	// q = q.OpenedBefore(time.Now().Add(-24 * time.Hour))
+func (q *Query) FetchAllIssues() ([]Entry, error) {
+	entries := make([]Entry, 0)
 
-	feed, err := q.FetchPage()
-	if err != nil {
-		fmt.Printf("Error: %v\n", err.Error())
-	} else {
-		fmt.Printf("Total issues: %v\n", feed.TotalResults)
+	workGroup := NewWorkGroup(10)
+
+	// Fetch the first page
+	result := <-workGroup.AddTask(q)
+	if result.Error != nil {
+		return nil, result.Error
 	}
 
-	issues, err := q.FetchAllIssues()
-	if err != nil {
-		fmt.Printf("Error: %v\n", err.Error())
-	} else {
-		fmt.Printf("Found: %v\n", len(issues))
+	// Get results for all additional pages
+	numPages := int(math.Ceil(float64(result.Feed.TotalResults) / float64(q.limit)))
+	queries := make([]*Query, numPages-1)
+	for i := 1; i < numPages; i++ {
+		queries[i-1] = q.Offset(i * q.limit)
 	}
+	results := <-workGroup.AddTasksUnordered(queries)
+
+	// Merge the entries together
+	results = append(results, result)
+	for _, result := range results {
+		if result.Error != nil {
+			return nil, result.Error
+		}
+		for _, entry := range result.Feed.Entries {
+			entries = append(entries, entry)
+		}
+	}
+
+	return entries, nil
 }

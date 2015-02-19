@@ -23,14 +23,14 @@ func NewWorkGroup(numWorkers int) *WorkGroup {
 	taskChan := make(chan *Task)
 
 	for i := 0; i < numWorkers; i++ {
-		go func() {
+		go func(num int) {
 			for {
 				task, ok := <-taskChan
 				if !ok {
 					return
 				}
 
-				log.Printf("Fetching: %v", task.Query.URL())
+				log.Printf("[%v] Fetching: %v", num, task.Query.URL())
 
 				feed, err := task.Query.FetchPage()
 				if err != nil {
@@ -43,7 +43,7 @@ func NewWorkGroup(numWorkers int) *WorkGroup {
 					}
 				}
 			}
-		}()
+		}(i)
 	}
 
 	return &WorkGroup{taskChan}
