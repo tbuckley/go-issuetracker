@@ -36,7 +36,7 @@ type Feed struct {
 	TotalResults int      `xml:"totalResults"`
 	StartIndex   int      `xml:"startIndex"`
 	ItemsPerPage int      `xml:"itemsPerPage"`
-	Entries      []Entry  `xml:"entry"`
+	Entries      []*Entry `xml:"entry"`
 }
 
 func (f Feed) NumPages() int {
@@ -202,10 +202,10 @@ func (q *Query) FetchPage() (*Feed, error) {
 	return feed, err
 }
 
-func (q *Query) FetchAllIssues() ([]Entry, error) {
-	entries := make([]Entry, 0)
+func (q *Query) FetchAllIssues() ([]*Entry, error) {
+	entries := make([]*Entry, 0)
 
-	workGroup := NewWorkGroup(10)
+	workGroup := NewWorkGroup(20)
 
 	// Fetch the first page
 	result := <-workGroup.AddTask(q)
