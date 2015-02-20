@@ -111,6 +111,18 @@ func GetIssueLabelIntByPrefix(entry *Entry, prefix string) (int, bool) {
 	return priority, true
 }
 
+func GetIssueCrLabels(entry *Entry) []string {
+	return GetIssueLabelsByPrefix(entry, "Cr-")
+}
+
 func GetIssuePriority(entry *Entry) (int, bool) {
 	return GetIssueLabelIntByPrefix(entry, "Pri-")
+}
+
+func GetIssueMilestone(entry *Entry) (int, bool) {
+	return GetIssueLabelIntByPrefix(entry, "M-")
+}
+
+func GetISsueStars(entry *Entry) (int, bool) {
+	return entry.Stars, true
 }

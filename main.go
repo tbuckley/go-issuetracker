@@ -11,6 +11,18 @@ var (
 	storageFile = flag.String("storage", "", "Oauth storage")
 )
 
+func DisplayGroupsByIntProperty(issues []*Entry, propFunc IntPropertyFunc) {
+	groupedIssues := GroupIntProperty(issues, propFunc)
+	pairs := groupedIssues.PairsByValue()
+	for _, pair := range pairs {
+		if pair.Key == nil {
+			fmt.Printf("None: %v\n", len(pair.Entries))
+		} else {
+			fmt.Printf("%v: %v\n", *pair.Key, len(pair.Entries))
+		}
+	}
+}
+
 func main() {
 	flag.Parse()
 
@@ -31,13 +43,10 @@ func main() {
 		fmt.Printf("Found: %v\n", len(issues))
 	}
 
-	issuesByPriority := GroupIntProperty(issues, GetIssuePriority)
-	pairs := issuesByPriority.PairsByValue()
-	for _, pair := range pairs {
-		if pair.Key == nil {
-			fmt.Printf("None: %v\n", len(pair.Entries))
-		} else {
-			fmt.Printf("%v: %v\n", *pair.Key, len(pair.Entries))
-		}
-	}
+	fmt.Println("== Issues by priority ==")
+	DisplayGroupsByIntProperty(issues, GetIssuePriority)
+	fmt.Println("== Issues by milestone ==")
+	DisplayGroupsByIntProperty(issues, GetIssueMilestone)
+	fmt.Println("== Issues by stars ==")
+	DisplayGroupsByIntProperty(issues, GetISsueStars)
 }
