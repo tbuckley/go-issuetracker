@@ -1,20 +1,28 @@
 package main
 
 import (
+	"flag"
 	"fmt"
+	"log"
+)
+
+var (
+	secretsFile = flag.String("secrets", "", "Oauth secrets")
+	storageFile = flag.String("storage", "", "Oauth storage")
 )
 
 func main() {
-	q := NewQuery("chromium").Open().Limit(25)
-	q = q.Label("cr-ui-settings")
-	// q = q.OpenedBefore(time.Now().Add(-24 * time.Hour))
+	flag.Parse()
 
-	feed, err := q.FetchPage()
+	client, err := Authenticate(*storageFile, *secretsFile)
 	if err != nil {
-		fmt.Printf("Error: %v\n", err.Error())
-	} else {
-		fmt.Printf("Total issues: %v\n", feed.TotalResults)
+		panic(err)
 	}
+
+	log.Println("Starting requests...")
+
+	q := NewQuery("chromium").Client(client)
+	q = q.Label("cr-ui-settings")
 
 	issues, err := q.FetchAllIssues()
 	if err != nil {

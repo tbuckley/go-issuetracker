@@ -54,7 +54,15 @@ type Query struct {
 }
 
 func NewQuery(project string) *Query {
-	return &Query{project: project}
+	return &Query{
+		project: project,
+		client:  http.DefaultClient,
+		query:   nil,
+		params:  map[string]string{"can": "open"},
+
+		offset: 0,
+		limit:  25,
+	}
 }
 
 func (q *Query) clone() *Query {
@@ -76,6 +84,12 @@ func (q *Query) clone() *Query {
 		offset:  q.offset,
 		limit:   q.limit,
 	}
+}
+
+func (q *Query) Client(client *http.Client) *Query {
+	clone := q.clone()
+	clone.client = client
+	return clone
 }
 
 func (q *Query) Can(can string) *Query {
