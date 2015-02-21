@@ -125,6 +125,6 @@ func GetIssueMilestone(entry *query.Entry) (int, bool) {
 	return GetIssueLabelIntByPrefix(entry, "M-")
 }
 
-func GetISsueStars(entry *query.Entry) (int, bool) {
+func GetIssueStars(entry *query.Entry) (int, bool) {
 	return entry.Stars, true
 }
