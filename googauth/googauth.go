@@ -1,20 +1,21 @@
-package main
+package googauth
 
 import (
 	"encoding/json"
-	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
 	"io/ioutil"
 	"log"
 	"net/http"
+
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
 )
 
-type WebSecrets struct {
+type webSecrets struct {
 	ClientID     string `json:"client_id"`
 	ClientSecret string `json:"client_secret"`
 }
-type ClientSecrets struct {
-	Web WebSecrets `json:"web"`
+type clientSecrets struct {
+	Web webSecrets `json:"web"`
 }
 
 func exchangeCode(config *oauth2.Config, code string) (*oauth2.Token, *http.Client, error) {
@@ -26,20 +27,20 @@ func exchangeCode(config *oauth2.Config, code string) (*oauth2.Token, *http.Clie
 	return token, client, nil
 }
 
-func GetOauthURL(config *oauth2.Config) string {
+func getOauthURL(config *oauth2.Config) string {
 	return config.AuthCodeURL("foobar", oauth2.AccessTypeOffline)
 }
 
-type Authorization struct {
+type authorization struct {
 	Client *http.Client
 	Token  *oauth2.Token
 }
 
-func StartOauthHandler(config *oauth2.Config) chan *Authorization {
-	authorizationChan := make(chan *Authorization)
+func startOauthHandler(config *oauth2.Config) chan *authorization {
+	authorizationChan := make(chan *authorization)
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		url := GetOauthURL(config)
+		url := getOauthURL(config)
 		w.Write([]byte("<a href=\"" + url + "\">Click here</a>"))
 	})
 	http.HandleFunc("/oauth", func(w http.ResponseWriter, r *http.Request) {
@@ -50,7 +51,7 @@ func StartOauthHandler(config *oauth2.Config) chan *Authorization {
 			return
 		}
 
-		authorizationChan <- &Authorization{
+		authorizationChan <- &authorization{
 			Client: client,
 			Token:  token,
 		}
@@ -64,7 +65,7 @@ func StartOauthHandler(config *oauth2.Config) chan *Authorization {
 	return authorizationChan
 }
 
-func LoadOauthConfig(secretsFile string) *oauth2.Config {
+func loadOauthConfig(secretsFile string) *oauth2.Config {
 	// Load the secrets file
 	data, err := ioutil.ReadFile(secretsFile)
 	if err != nil {
@@ -72,7 +73,7 @@ func LoadOauthConfig(secretsFile string) *oauth2.Config {
 	}
 
 	// Read the secrets
-	secrets := new(ClientSecrets)
+	secrets := new(clientSecrets)
 	err = json.Unmarshal(data, secrets)
 	if err != nil {
 		panic(err.Error())
@@ -89,7 +90,7 @@ func LoadOauthConfig(secretsFile string) *oauth2.Config {
 	}
 }
 
-func LoadTokenClient(config *oauth2.Config, storageFile string) (*http.Client, error) {
+func loadTokenClient(config *oauth2.Config, storageFile string) (*http.Client, error) {
 	data, err := ioutil.ReadFile(storageFile)
 	if err != nil {
 		return nil, err
@@ -103,7 +104,7 @@ func LoadTokenClient(config *oauth2.Config, storageFile string) (*http.Client, e
 	return client, nil
 }
 
-func StoreToken(token *oauth2.Token, storageFile string) error {
+func storeToken(token *oauth2.Token, storageFile string) error {
 	data, err := json.Marshal(token)
 	if err != nil {
 		return err
@@ -113,12 +114,12 @@ func StoreToken(token *oauth2.Token, storageFile string) error {
 }
 
 func Authenticate(storageFile, secretsFile string) (*http.Client, error) {
-	config := LoadOauthConfig(secretsFile)
+	config := loadOauthConfig(secretsFile)
 
-	client, err := LoadTokenClient(config, storageFile)
+	client, err := loadTokenClient(config, storageFile)
 	if err != nil {
-		authorization := <-StartOauthHandler(config)
-		err = StoreToken(authorization.Token, storageFile)
+		authorization := <-startOauthHandler(config)
+		err = storeToken(authorization.Token, storageFile)
 		if err != nil {
 			return nil, err
 		}
