@@ -1,58 +1,14 @@
-package main
+package query
 
 import (
 	"encoding/xml"
 	"io/ioutil"
-	"math"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 	"time"
 )
-
-type Link struct {
-	Relationship string `xml:"rel,attr"`
-	Type         string `xml:"type,attr"`
-	Link         string `xml:"href,attr"`
-}
-
-type Entry struct {
-	ID        int      `xml:"http://schemas.google.com/projecthosting/issues/2009 id"`
-	Title     string   `xml:"title"`
-	Published string   `xml:"published"`
-	Updated   string   `xml:"updated"`
-	Labels    []string `xml:"label"`
-	Owner     string   `xml:"owner>username"`
-	Author    string   `xml:"author>name"`
-	CCs       []string `xml:"cc>username"`
-	Stars     int      `xml:"stars"`
-	State     string   `xml:"state"`
-	Status    string   `xml:"status"`
-	Links     []Link   `xml:"link"`
-}
-
-func (e *Entry) FullDataURL() string {
-	for _, link := range e.Links {
-		if link.Relationship == "" && link.Type == "" {
-
-		}
-	}
-	return ""
-}
-
-type Feed struct {
-	XMLName      xml.Name `xml:"feed"`
-	Links        []Link   `xml:"link"`
-	TotalResults int      `xml:"totalResults"`
-	StartIndex   int      `xml:"startIndex"`
-	ItemsPerPage int      `xml:"itemsPerPage"`
-	Entries      []*Entry `xml:"entry"`
-}
-
-func (f *Feed) NumPages() int {
-	return int(math.Ceil(float64(f.TotalResults) / float64(f.ItemsPerPage)))
-}
 
 type Query struct {
 	project string
@@ -62,9 +18,11 @@ type Query struct {
 
 	offset int
 	limit  int
+
+	workGroup *WorkGroup
 }
 
-func NewQuery(project string) *Query {
+func newQuery(project string, workGroup *WorkGroup) *Query {
 	return &Query{
 		project: project,
 		client:  http.DefaultClient,
@@ -73,6 +31,8 @@ func NewQuery(project string) *Query {
 
 		offset: 0,
 		limit:  25,
+
+		workGroup: workGroup,
 	}
 }
 
@@ -88,12 +48,13 @@ func (q *Query) clone() *Query {
 	}
 
 	return &Query{
-		project: q.project,
-		client:  q.client,
-		query:   query,
-		params:  params,
-		offset:  q.offset,
-		limit:   q.limit,
+		project:   q.project,
+		client:    q.client,
+		query:     query,
+		params:    params,
+		offset:    q.offset,
+		limit:     q.limit,
+		workGroup: q.workGroup,
 	}
 }
 
@@ -192,7 +153,7 @@ func (q *Query) URL() string {
 	return u.String()
 }
 
-func (q *Query) FetchPage() (*Feed, error) {
+func (q *Query) fetchPage() (*Feed, error) {
 	client := http.DefaultClient
 	if q.client != nil {
 		client = q.client
@@ -213,34 +174,36 @@ func (q *Query) FetchPage() (*Feed, error) {
 	return feed, err
 }
 
+func (q *Query) FetchPage() (*Feed, error) {
+	result := <-q.workGroup.addQueryTask(q)
+	return result.Feed, result.Error
+}
+
 func (q *Query) FetchAllIssues() ([]*Entry, error) {
 	entries := make([]*Entry, 0)
 
-	workGroup := NewWorkGroup(20)
-
 	// Fetch the first page
-	result := <-workGroup.AddTask(q)
-	if result.Error != nil {
-		return nil, result.Error
+	firstPage, err := q.FetchPage()
+	if err != nil {
+		return nil, err
 	}
 
 	// Get results for all additional pages
-	numPages := result.Feed.NumPages()
+	numPages := firstPage.NumPages()
 	queries := make([]*Query, numPages-1)
 	for i := 1; i < numPages; i++ {
 		queries[i-1] = q.Offset(i * q.limit)
 	}
-	results := <-workGroup.AddTasks(queries)
+	results := <-q.workGroup.addQueryTasks(queries)
+
+	entries = append(entries, firstPage.Entries...)
 
 	// Merge the entries together
-	results = append(results, result)
 	for _, result := range results {
 		if result.Error != nil {
 			return nil, result.Error
 		}
-		for _, entry := range result.Feed.Entries {
-			entries = append(entries, entry)
-		}
+		entries = append(entries, result.Feed.Entries...)
 	}
 
 	return entries, nil
