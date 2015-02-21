@@ -33,10 +33,9 @@ func NewWorkGroup(numWorkers int) *WorkGroup {
 				}
 
 				switch actualTask := task.(type) {
-				case queryTask:
+				case *queryTask:
 					log.Printf("[%v] Fetching query: %v", num, actualTask.Query.URL())
-
-					feed, err := actualTask.Query.FetchPage()
+					feed, err := actualTask.Query.fetchPage()
 					if err != nil {
 						actualTask.ResultChan <- &result{
 							Error: err,
@@ -46,6 +45,7 @@ func NewWorkGroup(numWorkers int) *WorkGroup {
 							Feed: feed,
 						}
 					}
+
 				default:
 					log.Printf("[%v] Cannot handle task: %#v", num, actualTask)
 				}

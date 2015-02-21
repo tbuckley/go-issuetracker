@@ -5,20 +5,22 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/tbuckley/go-issuetracker/query"
 )
 
-type IntPropertyFunc func(entry *Entry) (int, bool)
-type StringPropertyFunc func(entry *Entry) (string, bool)
-type StringListPropertyFunc func(entry *Entry) []string
-type TimePropertyFunc func(entry *Entry) (time.Time, bool)
+type IntPropertyFunc func(entry *query.Entry) (int, bool)
+type StringPropertyFunc func(entry *query.Entry) (string, bool)
+type StringListPropertyFunc func(entry *query.Entry) []string
+type TimePropertyFunc func(entry *query.Entry) (time.Time, bool)
 
 type IntGroups struct {
-	Groups map[int][]*Entry
-	None   []*Entry
+	Groups map[int][]*query.Entry
+	None   []*query.Entry
 }
 type IntPair struct {
 	Key     *int
-	Entries []*Entry
+	Entries []*query.Entry
 }
 type KeySortedIntPairList []*IntPair
 
@@ -61,9 +63,9 @@ func (g *IntGroups) PairsByNumEntries() []*IntPair {
 	return nil
 }
 
-func GroupIntProperty(entries []*Entry, propFunc IntPropertyFunc) *IntGroups {
+func GroupIntProperty(entries []*query.Entry, propFunc IntPropertyFunc) *IntGroups {
 	groups := &IntGroups{
-		Groups: make(map[int][]*Entry),
+		Groups: make(map[int][]*query.Entry),
 	}
 	for _, entry := range entries {
 		val, ok := propFunc(entry)
@@ -76,11 +78,11 @@ func GroupIntProperty(entries []*Entry, propFunc IntPropertyFunc) *IntGroups {
 	return groups
 }
 
-func GetIssueLabels(entry *Entry) []string {
+func GetIssueLabels(entry *query.Entry) []string {
 	return entry.Labels
 }
 
-func GetIssueLabelsByPrefix(entry *Entry, prefix string) []string {
+func GetIssueLabelsByPrefix(entry *query.Entry, prefix string) []string {
 	filtered := make([]string, 0)
 	labels := GetIssueLabels(entry)
 	for _, label := range labels {
@@ -91,7 +93,7 @@ func GetIssueLabelsByPrefix(entry *Entry, prefix string) []string {
 	return filtered
 }
 
-func GetIssueLabelByPrefix(entry *Entry, prefix string) (string, bool) {
+func GetIssueLabelByPrefix(entry *query.Entry, prefix string) (string, bool) {
 	labels := GetIssueLabelsByPrefix(entry, prefix)
 	if len(labels) == 1 {
 		return labels[0], true
@@ -99,7 +101,7 @@ func GetIssueLabelByPrefix(entry *Entry, prefix string) (string, bool) {
 	return "", false
 }
 
-func GetIssueLabelIntByPrefix(entry *Entry, prefix string) (int, bool) {
+func GetIssueLabelIntByPrefix(entry *query.Entry, prefix string) (int, bool) {
 	priorityString, ok := GetIssueLabelByPrefix(entry, prefix)
 	if !ok {
 		return 0, false
@@ -111,18 +113,18 @@ func GetIssueLabelIntByPrefix(entry *Entry, prefix string) (int, bool) {
 	return priority, true
 }
 
-func GetIssueCrLabels(entry *Entry) []string {
+func GetIssueCrLabels(entry *query.Entry) []string {
 	return GetIssueLabelsByPrefix(entry, "Cr-")
 }
 
-func GetIssuePriority(entry *Entry) (int, bool) {
+func GetIssuePriority(entry *query.Entry) (int, bool) {
 	return GetIssueLabelIntByPrefix(entry, "Pri-")
 }
 
-func GetIssueMilestone(entry *Entry) (int, bool) {
+func GetIssueMilestone(entry *query.Entry) (int, bool) {
 	return GetIssueLabelIntByPrefix(entry, "M-")
 }
 
-func GetISsueStars(entry *Entry) (int, bool) {
+func GetISsueStars(entry *query.Entry) (int, bool) {
 	return entry.Stars, true
 }

@@ -4,6 +4,9 @@ import (
 	"flag"
 	"fmt"
 	"log"
+
+	"github.com/tbuckley/go-issuetracker/googauth"
+	"github.com/tbuckley/go-issuetracker/query"
 )
 
 var (
@@ -11,7 +14,7 @@ var (
 	storageFile = flag.String("storage", "", "Oauth storage")
 )
 
-func DisplayGroupsByIntProperty(issues []*Entry, propFunc IntPropertyFunc) {
+func DisplayGroupsByIntProperty(issues []*query.Entry, propFunc IntPropertyFunc) {
 	groupedIssues := GroupIntProperty(issues, propFunc)
 	pairs := groupedIssues.PairsByValue()
 	for _, pair := range pairs {
@@ -26,14 +29,15 @@ func DisplayGroupsByIntProperty(issues []*Entry, propFunc IntPropertyFunc) {
 func main() {
 	flag.Parse()
 
-	client, err := Authenticate(*storageFile, *secretsFile)
+	client, err := googauth.Authenticate(*storageFile, *secretsFile)
 	if err != nil {
 		panic(err)
 	}
 
 	log.Println("Starting requests...")
 
-	q := NewQuery("chromium").Client(client)
+	wg := query.NewWorkGroup(20)
+	q := wg.NewQuery("chromium").Client(client)
 	q = q.Label("cr-ui-settings")
 
 	issues, err := q.FetchAllIssues()
