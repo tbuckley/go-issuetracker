@@ -11,6 +11,12 @@ import (
 	"time"
 )
 
+type Link struct {
+	Relationship string `xml:"rel,attr"`
+	Type         string `xml:"type,attr"`
+	Link         string `xml:"href,attr"`
+}
+
 type Entry struct {
 	ID        int      `xml:"http://schemas.google.com/projecthosting/issues/2009 id"`
 	Title     string   `xml:"title"`
@@ -25,11 +31,16 @@ type Entry struct {
 	Status    string   `xml:"status"`
 	Links     []Link   `xml:"link"`
 }
-type Link struct {
-	Relationship string `xml:"rel,attr"`
-	Type         string `xml:"type,attr"`
-	Link         string `xml:"href,attr"`
+
+func (e *Entry) FullDataURL() string {
+	for _, link := range e.Links {
+		if link.Relationship == "" && link.Type == "" {
+
+		}
+	}
+	return ""
 }
+
 type Feed struct {
 	XMLName      xml.Name `xml:"feed"`
 	Links        []Link   `xml:"link"`
@@ -39,7 +50,7 @@ type Feed struct {
 	Entries      []*Entry `xml:"entry"`
 }
 
-func (f Feed) NumPages() int {
+func (f *Feed) NumPages() int {
 	return int(math.Ceil(float64(f.TotalResults) / float64(f.ItemsPerPage)))
 }
 
