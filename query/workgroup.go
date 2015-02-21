@@ -1,20 +1,34 @@
 package query
 
 import (
+	"errors"
 	"log"
 	"sync"
 )
 
-type result struct {
+var (
+	UnknownTask = errors.New("Cannot handle task")
+)
+
+type task interface {
+	SetError(err error)
+}
+
+type queryResult struct {
 	Feed  *Feed
 	Error error
 }
 
-type task interface{}
-
 type queryTask struct {
 	Query      *Query
-	ResultChan chan *result
+	ResultChan chan *queryResult
+}
+
+func (t *queryTask) SetResponse(feed *Feed) {
+	t.ResultChan <- &queryResult{Feed: feed}
+}
+func (t *queryTask) SetError(err error) {
+	t.ResultChan <- &queryResult{Error: err}
 }
 
 type WorkGroup struct {
@@ -37,17 +51,13 @@ func NewWorkGroup(numWorkers int) *WorkGroup {
 					log.Printf("[%v] Fetching query: %v", num, actualTask.Query.URL())
 					feed, err := actualTask.Query.fetchPage()
 					if err != nil {
-						actualTask.ResultChan <- &result{
-							Error: err,
-						}
+						actualTask.SetError(err)
 					} else {
-						actualTask.ResultChan <- &result{
-							Feed: feed,
-						}
+						actualTask.SetResponse(feed)
 					}
-
 				default:
 					log.Printf("[%v] Cannot handle task: %#v", num, actualTask)
+					task.SetError(UnknownTask)
 				}
 
 			}
@@ -61,7 +71,7 @@ func (g *WorkGroup) NewQuery(project string) *Query {
 	return newQuery(project, g)
 }
 
-func (g *WorkGroup) addQueryTaskWithOutput(query *Query, resultChan chan *result) {
+func (g *WorkGroup) addQueryTaskWithOutput(query *Query, resultChan chan *queryResult) {
 	go func() {
 		g.taskChan <- &queryTask{
 			Query:      query,
@@ -70,19 +80,19 @@ func (g *WorkGroup) addQueryTaskWithOutput(query *Query, resultChan chan *result
 	}()
 }
 
-func (g *WorkGroup) addQueryTask(query *Query) chan *result {
-	resultChan := make(chan *result)
+func (g *WorkGroup) addQueryTask(query *Query) chan *queryResult {
+	resultChan := make(chan *queryResult)
 	g.addQueryTaskWithOutput(query, resultChan)
 	return resultChan
 }
 
-func (g *WorkGroup) addQueryTasks(queries []*Query) chan []*result {
-	multiResultChan := make(chan []*result)
+func (g *WorkGroup) addQueryTasks(queries []*Query) chan []*queryResult {
+	multiResultChan := make(chan []*queryResult)
 
 	go func() {
 		wg := new(sync.WaitGroup)
 
-		results := make([]*result, len(queries))
+		results := make([]*queryResult, len(queries))
 		for i, query := range queries {
 			wg.Add(1)
 			go func(i int, query *Query) {
