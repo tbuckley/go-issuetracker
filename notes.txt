@@ -1,0 +1,33 @@
+## Status
+
+* Total bugs (week/month/quarter)
+* Bugs created vs. bugs resolved
+
+## Cleanliness
+
+* Untriaged (week/month/quarter)
+* No owner (week/month/quarter)
+* No milestone (week/month/quarter)
+* No priority (week/month/quarter)
+* No type (week/month/quarter)
+* No OS (week/month/quarter)
+* Missing status (?) (week/month/quarter)
+* Old milestones (week/month/quarter)
+* Invalid label combos (week/month/quarter)
+
+## Top priority
+
+* P1 bugs (week/month/quarter)
+* Launch bugs for current milestone + next milestone
+
+## Superlatives
+
+* Oldest bug(s)
+* Bug(s) updated longest ago
+* Most starred bug(s)
+
+## People
+
+* Own the most bugs
+* Filed the most bugs (this week)
+* Resolved the most bugs (this week)

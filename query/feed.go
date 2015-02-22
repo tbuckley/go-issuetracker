@@ -17,7 +17,7 @@ type Entry struct {
 	Published string   `xml:"published"`
 	Updated   string   `xml:"updated"`
 	Labels    []string `xml:"label"`
-	Owner     string   `xml:"owner>username"`
+	Owner     *string  `xml:"owner>username"`
 	Author    string   `xml:"author>name"`
 	CCs       []string `xml:"cc>username"`
 	Stars     int      `xml:"stars"`
