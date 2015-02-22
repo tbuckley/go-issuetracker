@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/tbuckley/go-issuetracker/gcode"
 	"github.com/tbuckley/go-issuetracker/googauth"
-	"github.com/tbuckley/go-issuetracker/issues"
 	"github.com/tbuckley/go-issuetracker/query"
 )
 
@@ -15,7 +15,7 @@ var (
 	storageFile = flag.String("storage", "", "Oauth storage")
 )
 
-func DisplayGroupsByIntProperty(issues []*issues.Issue, propFunc IntPropertyFunc) {
+func DisplayGroupsByIntProperty(issues []*gcode.Issue, propFunc IntPropertyFunc) {
 	groupedIssues := GroupIntProperty(issues, propFunc)
 	pairs := groupedIssues.PairsByValue()
 	for _, pair := range pairs {

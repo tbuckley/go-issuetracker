@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/tbuckley/go-issuetracker/issues"
+	"github.com/tbuckley/go-issuetracker/gcode"
 )
 
 type Query struct {
@@ -155,7 +155,7 @@ func (q *Query) URL() string {
 	return u.String()
 }
 
-func (q *Query) fetchPage() (*issues.IssuesFeed, error) {
+func (q *Query) fetchPage() (*gcode.IssuesFeed, error) {
 	client := http.DefaultClient
 	if q.client != nil {
 		client = q.client
@@ -171,24 +171,25 @@ func (q *Query) fetchPage() (*issues.IssuesFeed, error) {
 		return nil, err
 	}
 
-	feed := new(issues.IssuesFeed)
+	feed := new(gcode.IssuesFeed)
 	err = xml.Unmarshal(data, feed)
 	return feed, err
 }
 
-func (q *Query) FetchPage() (*issues.IssuesFeed, error) {
+func (q *Query) FetchPage() (*gcode.IssuesFeed, error) {
 	result := <-q.workGroup.addQueryTask(q)
 	return result.Feed, result.Error
 }
 
-func (q *Query) FetchAllIssues() ([]*issues.Issue, error) {
-	entries := make([]*issues.Issue, 0)
+func (q *Query) FetchAllIssues() ([]*gcode.Issue, error) {
+	entries := make([]*gcode.Issue, 0)
 
-	// Fetch the first page
+	// Fetch the first page of issues
 	firstPage, err := q.FetchPage()
 	if err != nil {
 		return nil, err
 	}
+	entries = append(entries, firstPage.gcode...)
 
 	// Get results for all additional pages
 	numPages := firstPage.NumPages()
@@ -198,19 +199,19 @@ func (q *Query) FetchAllIssues() ([]*issues.Issue, error) {
 	}
 	results := <-q.workGroup.addQueryTasks(queries)
 
-	entries = append(entries, firstPage.Issues...)
+	entries = append(entries, firstPage.gcode...)
 
 	// Merge the entries together
 	for _, result := range results {
 		if result.Error != nil {
 			return nil, result.Error
 		}
-		entries = append(entries, result.Feed.Issues...)
+		entries = append(entries, result.Feed.gcode...)
 	}
 
 	return entries, nil
 }
 
-func (q *Query) FetchChangesForRange(start, end time.Time, duration time.Duration) {
+// func (q *Query) FetchChangesForRange(start, end time.Time, duration time.Duration) {
 
-}
+// }
