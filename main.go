@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/tbuckley/go-issuetracker/gcode"
 	"github.com/tbuckley/go-issuetracker/googauth"
 	"github.com/tbuckley/go-issuetracker/query"
 )
@@ -14,14 +15,14 @@ var (
 	storageFile = flag.String("storage", "", "Oauth storage")
 )
 
-func DisplayGroupsByIntProperty(issues []*query.Entry, propFunc IntPropertyFunc) {
+func DisplayGroupsByIntProperty(issues []*gcode.Issue, propFunc IntPropertyFunc) {
 	groupedIssues := GroupIntProperty(issues, propFunc)
 	pairs := groupedIssues.PairsByValue()
 	for _, pair := range pairs {
 		fmt.Printf("%v: %v\n", pair.KeyString(), len(pair.Issues()))
 	}
 }
-func DisplayGroupsByStringProperty(issues []*query.Entry, propFunc StringPropertyFunc) {
+func DisplayGroupsByStringProperty(issues []*gcode.Issue, propFunc StringPropertyFunc) {
 	groupedIssues := GroupStringProperty(issues, propFunc)
 	pairs := groupedIssues.PairsByNumEntries()
 	for _, pair := range pairs {
@@ -102,22 +103,9 @@ func main() {
 	fmt.Printf("Oldest published: crbug.com/%v (%v)\n", lastPublished.ID, lastPublished.Published)
 	lastUpdated := GetOldestIssue(updatedGroups)
 	fmt.Printf("Oldest updated: crbug.com/%v (%v)\n", lastUpdated.ID, lastUpdated.Published)
-
-	// fmt.Println("== Issues by priority ==")
-	// DisplayGroupsByIntProperty(issues, GetIssuePriority)
-	// fmt.Println("== Issues by milestone ==")
-	// DisplayGroupsByIntProperty(issues, GetIssueMilestone)
-	// fmt.Println("== Issues by stars ==")
-	// DisplayGroupsByIntProperty(issues, GetISsueStars)
-	// fmt.Println("== Issues by owner ==")
-	// DisplayGroupsByStringProperty(issues, GetIssueOwner)
-	// fmt.Println("== Issues by type ==")
-	// DisplayGroupsByStringProperty(issues, GetIssueType)
-	// fmt.Println("== Issues by status ==")
-	// DisplayGroupsByStringProperty(issues, GetIssueStatus)
 }
 
-func GetMostStarredIssue(starGroups *IntGroups) *query.Entry {
+func GetMostStarredIssue(starGroups *IntGroups) *gcode.Issue {
 	starsSorted := starGroups.PairsByValue()
 	if len(starsSorted) == 0 {
 		return nil
@@ -130,7 +118,7 @@ func GetMostStarredIssue(starGroups *IntGroups) *query.Entry {
 	return lastBucket[0]
 }
 
-func GetOldestIssue(timeGroups *TimeGroups) *query.Entry {
+func GetOldestIssue(timeGroups *TimeGroups) *gcode.Issue {
 	timesSorted := timeGroups.PairsByValue()
 	if len(timesSorted) == 0 {
 		return nil
@@ -143,7 +131,7 @@ func GetOldestIssue(timeGroups *TimeGroups) *query.Entry {
 	return oldestBucket[0]
 }
 
-func LaunchBugsForMilestone(milestoneGroups *IntGroups, milestone int) []*query.Entry {
+func LaunchBugsForMilestone(milestoneGroups *IntGroups, milestone int) []*gcode.Issue {
 	milestoneIssues, ok := milestoneGroups.Groups[milestone]
 	if !ok {
 		return nil

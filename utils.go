@@ -5,17 +5,17 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/tbuckley/go-issuetracker/query"
+	"github.com/tbuckley/go-issuetracker/gcode"
 )
 
-type IntPropertyFunc func(entry *query.Entry) (int, bool)
-type StringPropertyFunc func(entry *query.Entry) (string, bool)
-type StringListPropertyFunc func(entry *query.Entry) []string
-type TimePropertyFunc func(entry *query.Entry) (time.Time, bool)
+type IntPropertyFunc func(entry *gcode.Issue) (int, bool)
+type StringPropertyFunc func(entry *gcode.Issue) (string, bool)
+type StringListPropertyFunc func(entry *gcode.Issue) []string
+type TimePropertyFunc func(entry *gcode.Issue) (time.Time, bool)
 
 type IssuePair interface {
 	HasKeyLessThan(p IssuePair) bool
-	Issues() []*query.Entry
+	Issues() []*gcode.Issue
 	KeyString() string
 }
 
@@ -47,7 +47,7 @@ func (l NumIssuesSortedPairList) Swap(i, j int) {
 
 type IntPair struct {
 	Key     *int
-	Entries []*query.Entry
+	Entries []*gcode.Issue
 }
 
 func (p *IntPair) HasKeyLessThan(pair IssuePair) bool {
@@ -66,7 +66,7 @@ func (p *IntPair) HasKeyLessThan(pair IssuePair) bool {
 	}
 }
 
-func (p *IntPair) Issues() []*query.Entry {
+func (p *IntPair) Issues() []*gcode.Issue {
 	return p.Entries
 }
 
@@ -78,8 +78,8 @@ func (p *IntPair) KeyString() string {
 }
 
 type IntGroups struct {
-	Groups map[int][]*query.Entry
-	None   []*query.Entry
+	Groups map[int][]*gcode.Issue
+	None   []*gcode.Issue
 }
 
 func (g *IntGroups) Pairs() []IssuePair {
@@ -106,9 +106,9 @@ func (g *IntGroups) PairsByNumEntries() []IssuePair {
 	return pairs
 }
 
-func GroupIntProperty(entries []*query.Entry, propFunc IntPropertyFunc) *IntGroups {
+func GroupIntProperty(entries []*gcode.Issue, propFunc IntPropertyFunc) *IntGroups {
 	groups := &IntGroups{
-		Groups: make(map[int][]*query.Entry),
+		Groups: make(map[int][]*gcode.Issue),
 	}
 	for _, entry := range entries {
 		val, ok := propFunc(entry)
@@ -125,7 +125,7 @@ func GroupIntProperty(entries []*query.Entry, propFunc IntPropertyFunc) *IntGrou
 
 type StringPair struct {
 	Key     *string
-	Entries []*query.Entry
+	Entries []*gcode.Issue
 }
 
 func (p *StringPair) HasKeyLessThan(pair IssuePair) bool {
@@ -144,7 +144,7 @@ func (p *StringPair) HasKeyLessThan(pair IssuePair) bool {
 	}
 }
 
-func (p *StringPair) Issues() []*query.Entry {
+func (p *StringPair) Issues() []*gcode.Issue {
 	return p.Entries
 }
 
@@ -156,8 +156,8 @@ func (p *StringPair) KeyString() string {
 }
 
 type StringGroups struct {
-	Groups map[string][]*query.Entry
-	None   []*query.Entry
+	Groups map[string][]*gcode.Issue
+	None   []*gcode.Issue
 }
 
 func (g *StringGroups) Pairs() []IssuePair {
@@ -184,9 +184,9 @@ func (g *StringGroups) PairsByNumEntries() []IssuePair {
 	return pairs
 }
 
-func GroupStringProperty(entries []*query.Entry, propFunc StringPropertyFunc) *StringGroups {
+func GroupStringProperty(entries []*gcode.Issue, propFunc StringPropertyFunc) *StringGroups {
 	groups := &StringGroups{
-		Groups: make(map[string][]*query.Entry),
+		Groups: make(map[string][]*gcode.Issue),
 	}
 	for _, entry := range entries {
 		val, ok := propFunc(entry)
@@ -203,7 +203,7 @@ func GroupStringProperty(entries []*query.Entry, propFunc StringPropertyFunc) *S
 
 type TimePair struct {
 	Key     *time.Time
-	Entries []*query.Entry
+	Entries []*gcode.Issue
 }
 
 func (p *TimePair) HasKeyLessThan(pair IssuePair) bool {
@@ -222,7 +222,7 @@ func (p *TimePair) HasKeyLessThan(pair IssuePair) bool {
 	}
 }
 
-func (p *TimePair) Issues() []*query.Entry {
+func (p *TimePair) Issues() []*gcode.Issue {
 	return p.Entries
 }
 
@@ -234,8 +234,8 @@ func (p *TimePair) KeyString() string {
 }
 
 type TimeGroups struct {
-	Groups map[time.Time][]*query.Entry
-	None   []*query.Entry
+	Groups map[time.Time][]*gcode.Issue
+	None   []*gcode.Issue
 }
 
 func (g *TimeGroups) Pairs() []IssuePair {
@@ -262,9 +262,9 @@ func (g *TimeGroups) PairsByNumEntries() []IssuePair {
 	return pairs
 }
 
-func GroupTimeProperty(entries []*query.Entry, propFunc TimePropertyFunc) *TimeGroups {
+func GroupTimeProperty(entries []*gcode.Issue, propFunc TimePropertyFunc) *TimeGroups {
 	groups := &TimeGroups{
-		Groups: make(map[time.Time][]*query.Entry),
+		Groups: make(map[time.Time][]*gcode.Issue),
 	}
 	for _, entry := range entries {
 		val, ok := propFunc(entry)

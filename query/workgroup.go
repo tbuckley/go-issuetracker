@@ -4,6 +4,8 @@ import (
 	"errors"
 	"log"
 	"sync"
+
+	"github.com/tbuckley/go-issuetracker/gcode"
 )
 
 var (
@@ -15,7 +17,7 @@ type task interface {
 }
 
 type queryResult struct {
-	Feed  *Feed
+	Feed  *gcode.IssuesFeed
 	Error error
 }
 
@@ -24,7 +26,7 @@ type queryTask struct {
 	ResultChan chan *queryResult
 }
 
-func (t *queryTask) SetResponse(feed *Feed) {
+func (t *queryTask) SetResponse(feed *gcode.IssuesFeed) {
 	t.ResultChan <- &queryResult{Feed: feed}
 }
 func (t *queryTask) SetError(err error) {
