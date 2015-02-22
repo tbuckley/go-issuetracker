@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/tbuckley/go-issuetracker/common"
 	"github.com/tbuckley/go-issuetracker/gcode"
 	"github.com/tbuckley/go-issuetracker/googauth"
 	"github.com/tbuckley/go-issuetracker/query"
@@ -15,15 +16,15 @@ var (
 	storageFile = flag.String("storage", "", "Oauth storage")
 )
 
-func DisplayGroupsByIntProperty(issues []*gcode.Issue, propFunc IntPropertyFunc) {
-	groupedIssues := GroupIntProperty(issues, propFunc)
+func DisplayGroupsByIntProperty(issues []*gcode.Issue, propFunc common.IntPropertyFunc) {
+	groupedIssues := common.GroupIntProperty(issues, propFunc)
 	pairs := groupedIssues.PairsByValue()
 	for _, pair := range pairs {
 		fmt.Printf("%v: %v\n", pair.KeyString(), len(pair.Issues()))
 	}
 }
-func DisplayGroupsByStringProperty(issues []*gcode.Issue, propFunc StringPropertyFunc) {
-	groupedIssues := GroupStringProperty(issues, propFunc)
+func DisplayGroupsByStringProperty(issues []*gcode.Issue, propFunc common.StringPropertyFunc) {
+	groupedIssues := common.GroupStringProperty(issues, propFunc)
 	pairs := groupedIssues.PairsByNumEntries()
 	for _, pair := range pairs {
 		fmt.Printf("%v: %v\n", pair.KeyString(), len(pair.Issues()))
@@ -56,15 +57,15 @@ func main() {
 		fmt.Printf("Found: %v\n", len(issues))
 	}
 
-	priorityGroups := GroupIntProperty(issues, GetIssuePriority)
-	milestoneGroups := GroupIntProperty(issues, GetIssueMilestone)
-	starGroups := GroupIntProperty(issues, GetISsueStars)
-	ownerGroups := GroupStringProperty(issues, GetIssueOwner)
-	typeGroups := GroupStringProperty(issues, GetIssueType)
-	statusGroups := GroupStringProperty(issues, GetIssueStatus)
-	osGroups := GroupStringProperty(issues, GetIssueOS)
-	publishedGroups := GroupTimeProperty(issues, GetIssuePublished)
-	updatedGroups := GroupTimeProperty(issues, GetIssueUpdated)
+	priorityGroups := common.GroupIntProperty(issues, common.GetIssuePriority)
+	milestoneGroups := common.GroupIntProperty(issues, common.GetIssueMilestone)
+	starGroups := common.GroupIntProperty(issues, common.GetISsueStars)
+	ownerGroups := common.GroupStringProperty(issues, common.GetIssueOwner)
+	typeGroups := common.GroupStringProperty(issues, common.GetIssueType)
+	statusGroups := common.GroupStringProperty(issues, common.GetIssueStatus)
+	osGroups := common.GroupStringProperty(issues, common.GetIssueOS)
+	publishedGroups := common.GroupTimeProperty(issues, common.GetIssuePublished)
+	updatedGroups := common.GroupTimeProperty(issues, common.GetIssueUpdated)
 
 	fmt.Printf("Total bugs: %v\n", len(issues))
 
@@ -79,15 +80,8 @@ func main() {
 
 	currentMilestone := 42
 
-	milestonesSorted := milestoneGroups.Pairs()
-	oldMilestones := 0
-	for _, pair := range milestonesSorted {
-		intPair := pair.(*IntPair)
-		if intPair.Key != nil && *intPair.Key < currentMilestone {
-			oldMilestones += len(intPair.Entries)
-		}
-	}
-	fmt.Printf("Old milestones: %v\n", oldMilestones)
+	oldMilestoneIssues := GetOldMilestoneIssues(milestoneGroups, currentMilestone)
+	fmt.Printf("Old milestones: %v\n", len(oldMilestoneIssues))
 
 	fmt.Println("== Priority list ==")
 	fmt.Printf("P1: %v\n", len(priorityGroups.Groups[1]))
@@ -105,7 +99,19 @@ func main() {
 	fmt.Printf("Oldest updated: crbug.com/%v (%v)\n", lastUpdated.ID, lastUpdated.Published)
 }
 
-func GetMostStarredIssue(starGroups *IntGroups) *gcode.Issue {
+func GetOldMilestoneIssues(milestoneGroups *common.IntGroups, milestone int) []*gcode.Issue {
+	issues := make([]*gcode.Issue, 0)
+	milestonesSorted := milestoneGroups.Pairs()
+	for _, pair := range milestonesSorted {
+		intPair := pair.(*common.IntPair)
+		if intPair.Key != nil && *intPair.Key < milestone {
+			issues = append(issues, intPair.Entries...)
+		}
+	}
+	return issues
+}
+
+func GetMostStarredIssue(starGroups *common.IntGroups) *gcode.Issue {
 	starsSorted := starGroups.PairsByValue()
 	if len(starsSorted) == 0 {
 		return nil
@@ -118,7 +124,7 @@ func GetMostStarredIssue(starGroups *IntGroups) *gcode.Issue {
 	return lastBucket[0]
 }
 
-func GetOldestIssue(timeGroups *TimeGroups) *gcode.Issue {
+func GetOldestIssue(timeGroups *common.TimeGroups) *gcode.Issue {
 	timesSorted := timeGroups.PairsByValue()
 	if len(timesSorted) == 0 {
 		return nil
@@ -131,12 +137,12 @@ func GetOldestIssue(timeGroups *TimeGroups) *gcode.Issue {
 	return oldestBucket[0]
 }
 
-func LaunchBugsForMilestone(milestoneGroups *IntGroups, milestone int) []*gcode.Issue {
+func LaunchBugsForMilestone(milestoneGroups *common.IntGroups, milestone int) []*gcode.Issue {
 	milestoneIssues, ok := milestoneGroups.Groups[milestone]
 	if !ok {
 		return nil
 	}
-	typeIssues := GroupStringProperty(milestoneIssues, GetIssueType)
+	typeIssues := common.GroupStringProperty(milestoneIssues, common.GetIssueType)
 	launchIssues, ok := typeIssues.Groups["Launch"]
 	if !ok {
 		return nil
