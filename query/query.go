@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/tbuckley/go-issuetracker/issues"
 )
 
 type Query struct {
@@ -153,7 +155,7 @@ func (q *Query) URL() string {
 	return u.String()
 }
 
-func (q *Query) fetchPage() (*Feed, error) {
+func (q *Query) fetchPage() (*issues.IssuesFeed, error) {
 	client := http.DefaultClient
 	if q.client != nil {
 		client = q.client
@@ -169,18 +171,18 @@ func (q *Query) fetchPage() (*Feed, error) {
 		return nil, err
 	}
 
-	feed := new(Feed)
+	feed := new(issues.IssuesFeed)
 	err = xml.Unmarshal(data, feed)
 	return feed, err
 }
 
-func (q *Query) FetchPage() (*Feed, error) {
+func (q *Query) FetchPage() (*issues.IssuesFeed, error) {
 	result := <-q.workGroup.addQueryTask(q)
 	return result.Feed, result.Error
 }
 
-func (q *Query) FetchAllIssues() ([]*Entry, error) {
-	entries := make([]*Entry, 0)
+func (q *Query) FetchAllIssues() ([]*issues.Issue, error) {
+	entries := make([]*issues.Issue, 0)
 
 	// Fetch the first page
 	firstPage, err := q.FetchPage()
@@ -196,14 +198,14 @@ func (q *Query) FetchAllIssues() ([]*Entry, error) {
 	}
 	results := <-q.workGroup.addQueryTasks(queries)
 
-	entries = append(entries, firstPage.Entries...)
+	entries = append(entries, firstPage.Issues...)
 
 	// Merge the entries together
 	for _, result := range results {
 		if result.Error != nil {
 			return nil, result.Error
 		}
-		entries = append(entries, result.Feed.Entries...)
+		entries = append(entries, result.Feed.Issues...)
 	}
 
 	return entries, nil

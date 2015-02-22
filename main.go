@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"github.com/tbuckley/go-issuetracker/googauth"
+	"github.com/tbuckley/go-issuetracker/issues"
 	"github.com/tbuckley/go-issuetracker/query"
 )
 
@@ -14,7 +15,7 @@ var (
 	storageFile = flag.String("storage", "", "Oauth storage")
 )
 
-func DisplayGroupsByIntProperty(issues []*query.Entry, propFunc IntPropertyFunc) {
+func DisplayGroupsByIntProperty(issues []*issues.Issue, propFunc IntPropertyFunc) {
 	groupedIssues := GroupIntProperty(issues, propFunc)
 	pairs := groupedIssues.PairsByValue()
 	for _, pair := range pairs {
@@ -52,5 +53,5 @@ func main() {
 	fmt.Println("== Issues by milestone ==")
 	DisplayGroupsByIntProperty(issues, GetIssueMilestone)
 	fmt.Println("== Issues by stars ==")
-	DisplayGroupsByIntProperty(issues, GetISsueStars)
+	DisplayGroupsByIntProperty(issues, GetIssueStars)
 }

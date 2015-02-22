@@ -1,7 +1,6 @@
-package query
+package issues
 
 import (
-	"encoding/xml"
 	"math"
 )
 
@@ -31,17 +30,16 @@ type Entry struct {
 	Links     []Link `xml:"link"`
 }
 
-type Updates struct {
-	CCChanges    []string `xml:"ccUpdate"`
-	LabelChanges []string `xml:"label"`
-	StatusChange *string  `xml:"status"`
-}
-
 type Reply struct {
 	Entry
 	CCChanges    []string `xml:"updates>ccUpdate"`
 	LabelChanges []string `xml:"updates>label"`
 	StatusChange *string  `xml:"updates>status"`
+}
+
+type RepliesFeed struct {
+	Feed
+	Replies []*Reply `xml:"entry"`
 }
 
 type Issue struct {

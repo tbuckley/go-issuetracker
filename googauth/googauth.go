@@ -5,7 +5,9 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"time"
 
+	"github.com/skratchdot/open-golang/open"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 )
@@ -61,6 +63,13 @@ func startOauthHandler(config *oauth2.Config) chan *authorization {
 	go func() {
 		log.Fatal(http.ListenAndServe(":8080", nil))
 	}()
+	go func() {
+		time.Sleep(1 * time.Second)
+		err := open.Run("http://localhost:8080")
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
 
 	return authorizationChan
 }
@@ -109,8 +118,8 @@ func storeToken(token *oauth2.Token, storageFile string) error {
 	if err != nil {
 		return err
 	}
-	err = ioutil.WriteFile(storageFile, data, 0755)
-	return err
+	log.Printf("Writing to file %v", storageFile)
+	return ioutil.WriteFile(storageFile, data, 0755)
 }
 
 func Authenticate(storageFile, secretsFile string) (*http.Client, error) {
