@@ -32,6 +32,11 @@ func DisplayGroupsByStringProperty(issues []*query.Entry, propFunc StringPropert
 func main() {
 	flag.Parse()
 
+	if *storageFile == "" || *secretsFile == "" {
+		fmt.Println("Usage: ./go-issuetracker --secrets=SECRETFILE --storage=STORAGEFILE")
+		return
+	}
+
 	client, err := googauth.Authenticate(*storageFile, *secretsFile)
 	if err != nil {
 		panic(err)
