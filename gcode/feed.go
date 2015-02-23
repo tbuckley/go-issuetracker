@@ -34,7 +34,7 @@ type Reply struct {
 	Entry
 	CCChanges    []string `xml:"updates>ccUpdate"`
 	LabelChanges []string `xml:"updates>label"`
-	StatusChange *string  `xml:"updates>status"`
+	StatusChange string   `xml:"updates>status"`
 }
 
 type RepliesFeed struct {
@@ -46,7 +46,7 @@ type Issue struct {
 	Entry
 	ID      int      `xml:"http://schemas.google.com/projecthosting/issues/2009 id"`
 	Labels  []string `xml:"label"`
-	Owner   *string  `xml:"owner>username"`
+	Owner   string   `xml:"owner>username"`
 	CCs     []string `xml:"cc>username"`
 	Stars   int      `xml:"stars"`
 	State   string   `xml:"state"`

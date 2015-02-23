@@ -64,7 +64,7 @@ func HandleResetIssues(w http.ResponseWriter, r *http.Request) {
 
 	// Get new issues
 	utcNow := time.Now().UTC()
-	workgroup := query.NewWorkGroup(10)
+	workgroup := query.NewWorkGroup(1)
 	client := urlfetch.Client(ctx)
 	q := workgroup.NewQuery("chromium").Client(client)
 	q = q.Label("cr-ui-settings").Open()

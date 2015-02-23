@@ -11,8 +11,10 @@ func init() {
 
 	r.HandleFunc("/api/issues/{label}", HandleGetIssues).Methods("GET")
 
-	r.HandleFunc("/tasks/issues/reset", HandleResetIssues)
-	r.HandleFunc("/tasks/issues/update", HandleUpdateIssues)
+	r.HandleFunc("/tasks/issues/reset", HandleResetIssues).Methods("GET")
+	r.HandleFunc("/tasks/issues/update", HandleUpdateIssues).Methods("GET")
 
 	r.Handle("/", http.FileServer(http.Dir("static/dashboard")))
+
+	http.Handle("/", r)
 }

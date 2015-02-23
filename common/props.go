@@ -60,10 +60,7 @@ func GetISsueStars(entry *gcode.Issue) (int, bool) {
 }
 
 func GetIssueOwner(entry *gcode.Issue) (string, bool) {
-	if entry.Owner != nil {
-		return *entry.Owner, true
-	}
-	return "", false
+	return entry.Owner, len(entry.Owner) > 0
 }
 
 func GetIssueStatus(entry *gcode.Issue) (string, bool) {
