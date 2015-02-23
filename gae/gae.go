@@ -14,7 +14,8 @@ func init() {
 	r.HandleFunc("/tasks/issues/reset", HandleResetIssues).Methods("GET")
 	r.HandleFunc("/tasks/issues/update", HandleUpdateIssues).Methods("GET")
 
-	r.Handle("/", http.FileServer(http.Dir("static/dashboard")))
+	r.PathPrefix("/components/").Handler(http.StripPrefix("/components/", http.FileServer(http.Dir("static/components"))))
+	r.PathPrefix("/").Handler(http.FileServer(http.Dir("static/dashboard")))
 
 	http.Handle("/", r)
 }

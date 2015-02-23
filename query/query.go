@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/tbuckley/go-issuetracker/gcode"
@@ -181,37 +182,95 @@ func (q *Query) FetchPage() (*gcode.IssuesFeed, error) {
 	return result.Feed, result.Error
 }
 
-func (q *Query) FetchAllIssues() ([]*gcode.Issue, error) {
-	entries := make([]*gcode.Issue, 0)
-
-	// Fetch the first page of issues
-	firstPage, err := q.FetchPage()
-	if err != nil {
-		return nil, err
-	}
-	entries = append(entries, firstPage.Issues...)
-
-	// Get results for all additional pages
-	numPages := firstPage.NumPages()
-	queries := make([]*Query, numPages-1)
-	for i := 1; i < numPages; i++ {
-		queries[i-1] = q.Offset(i * q.limit)
-	}
-	results := <-q.workGroup.addQueryTasks(queries)
-
-	entries = append(entries, firstPage.Issues...)
-
-	// Merge the entries together
-	for _, result := range results {
-		if result.Error != nil {
-			return nil, result.Error
-		}
-		entries = append(entries, result.Feed.Issues...)
-	}
-
-	return entries, nil
+type OptionalIssuesFeed struct {
+	IssuesFeed *gcode.IssuesFeed
+	Error      error
 }
 
-// func (q *Query) FetchChangesForRange(start, end time.Time, duration time.Duration) {
+type OptionalIssue struct {
+	Issue *gcode.Issue
+	Error error
+}
+
+type OptionalIssues struct {
+	Issues []*gcode.Issue
+	Error  error
+}
+
+func (q *Query) FetchAllPages() chan OptionalIssuesFeed {
+	feedChan := make(chan OptionalIssuesFeed)
+
+	go func() {
+		firstPage, err := q.FetchPage()
+		if err != nil {
+			feedChan <- OptionalIssuesFeed{Error: err}
+			close(feedChan)
+		} else {
+			wg := new(sync.WaitGroup)
+			feedChan <- OptionalIssuesFeed{IssuesFeed: firstPage}
+			numPages := firstPage.NumPages()
+			for i := 1; i < numPages; i++ {
+				i := i
+				wg.Add(1)
+				go func() {
+					page, err := q.Offset(i * q.limit).FetchPage()
+					if err != nil {
+						feedChan <- OptionalIssuesFeed{Error: err}
+					} else {
+						feedChan <- OptionalIssuesFeed{IssuesFeed: page}
+					}
+					wg.Done()
+				}()
+			}
+			wg.Wait()
+			close(feedChan)
+		}
+	}()
+
+	return feedChan
+}
+
+func (q *Query) FetchAllIssues() chan OptionalIssue {
+	issueChan := make(chan OptionalIssue)
+
+	go func() {
+		for optionalPage := range q.FetchAllPages() {
+			if optionalPage.Error != nil {
+				issueChan <- OptionalIssue{Error: optionalPage.Error}
+			} else {
+				for _, issue := range optionalPage.IssuesFeed.Issues {
+					issueChan <- OptionalIssue{Issue: issue}
+				}
+			}
+		}
+		close(issueChan)
+	}()
+
+	return issueChan
+}
+
+// func GetIssues(issueChan chan OptionalIssue) ([]*gcode.Issue, error) {
 
 // }
+
+func BatchIssues(issueChan chan OptionalIssue, batchNum int) chan OptionalIssues {
+	issuesChan := make(chan OptionalIssues)
+	go func() {
+		issues := make([]*gcode.Issue, 0)
+		for optionalIssue := range issueChan {
+			if optionalIssue.Error != nil {
+				issuesChan <- OptionalIssues{Error: optionalIssue.Error}
+			} else {
+				issues = append(issues, optionalIssue.Issue)
+				if len(issues) == batchNum {
+					issuesChan <- OptionalIssues{Issues: issues}
+					issues = make([]*gcode.Issue, 0)
+				}
+			}
+		}
+		if len(issues) > 0 {
+			issuesChan <- OptionalIssues{Issues: issues}
+		}
+	}()
+	return issuesChan
+}

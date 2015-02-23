@@ -1,0 +1,100 @@
+<link rel="import" href="../../../components/polymer/polymer.html">
+<link rel="import" href="../../../components/core-header-panel/core-header-panel.html">
+<link rel="import" href="../../../components/core-toolbar/core-toolbar.html">
+<link rel="import" href="../../../components/paper-input/paper-input.html">
+<link rel="import" href="../../../components/flatiron-director/flatiron-director.html">
+<link rel="import" href="../../../components/font-roboto/roboto.html">
+<link rel="import" href="../../../components/paper-spinner/paper-spinner.html">
+<link rel="import" href="../../../components/core-animated-pages/core-animated-pages.html">
+<link rel="import" href="../../../components/core-ajax/core-ajax.html">
+
+<polymer-element name="dashboard-app" attributes="" layout horizontal>
+  <template>
+    <link rel="stylesheet" href="dashboard-app.css" />
+
+    <flatiron-director route="{{route}}" autoHash></flatiron-director>
+    
+    <core-ajax id="loadIssues"
+      url="/api/issues/{{label}}"
+      method="get"
+      handleAs="json"
+      loading="{{loadingIssues}}"
+      response="{{issues}}">
+    </core-ajax>
+
+    <core-header-panel flex>
+      <core-toolbar>
+        <div>Issue Tracker</div>
+        <paper-input></paper-input>
+      </core-toolbar>
+      <div content fit>
+        <core-animated-pages selected="{{page}}" valueattr="id" fit>
+          <section id="main">
+            <a href="#/label/Cr-UI-Settings">Settings</a>
+          </section>
+          <section id="label">
+            <template if="{{loadingIssues}}">
+              <div fit layout horizontal center center-justified>
+                <paper-spinner active?="{{loadingIssues}}"></paper-spinner>
+              </div>
+            </template>
+            <template if="{{!loadingIssues}}">
+              <div card>
+                <div title>Total issues</div>
+                <div number>{{ issues.length }}</div>
+              </div>
+              <div card>
+                <div title>Untriaged issues</div>
+                <div number>{{ reports.status["Untriaged"].length }}</div>
+              </div>
+            </template>
+          </section>
+        <core-animated-pages>
+      </div>
+    </core-header-panel>
+  </template>
+  <script>
+    Polymer({
+      page: "main",
+      label: "",
+      issues: null,
+
+      ready: function() {
+        this.route = this.route || "";
+      },
+      routeChanged: function() {
+        console.log(this.route);
+        if(this.route == "") {
+          this.page = "main";
+        } else {
+          var parts = this.route.split("/");
+          if(parts.length > 0 && parts[0] == "label") {
+            this.page = "label";
+            this.label = parts[1];
+          }
+        }
+      },
+      labelChanged: function() {
+        this.$.loadIssues.go();
+      },
+      issuesChanged: function() {
+        function addToDict(map, key, issue) {
+          if(!map.hasOwnProperty(key)) {
+            map[key] = [];
+          }
+          map[key].push(issue);
+        }
+
+        if(this.issues && this.issues.length > 0) {
+          console.log("Generating");
+          var reports = this.reports = {
+            status: {},
+          };
+          this.issues.forEach(function(issue) {
+            addToDict(reports.status, issue.Status, issue);
+          });
+        }
+      }
+    });
+  </script>
+</polymer-element>

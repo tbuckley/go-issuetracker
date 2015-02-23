@@ -2,6 +2,7 @@ package gae
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -68,20 +69,23 @@ func HandleResetIssues(w http.ResponseWriter, r *http.Request) {
 	client := urlfetch.Client(ctx)
 	q := workgroup.NewQuery("chromium").Client(client)
 	q = q.Label("cr-ui-settings").Open()
-	issues, err := q.FetchAllIssues()
-	if err != nil {
-		ctx.Errorf("Error fetching all open issues: %v", err.Error())
-		return
+	issuesChan := query.BatchIssues(q.FetchAllIssues(), 25)
+	for optionalIssues := range issuesChan {
+		log.Printf("Handling issues!")
+		if optionalIssues.Error != nil {
+			ctx.Errorf("Error while fetching all open issues: %v", optionalIssues.Error.Error())
+			return
+		} else {
+			// Insert the issues
+			err = AddIssues(ctx, optionalIssues.Issues)
+			if err != nil {
+				ctx.Errorf("Error inserting batch of initial issues: %v", err.Error())
+				return
+			}
+			ctx.Infof("Successfully added batch of %v initial issues", len(optionalIssues.Issues))
+		}
 	}
-	ctx.Infof("Successfully retrieved all open issues: %v", len(issues))
-
-	// Insert the issues
-	err = AddIssues(ctx, issues)
-	if err != nil {
-		ctx.Errorf("Error inserting initial batch of issues: %v", err.Error())
-		return
-	}
-	ctx.Infof("Successfully added initial batch of %v issues", len(issues))
+	ctx.Infof("Successfully retrieved all open issues")
 
 	// Insert the log entry
 	err = SetLastUpdateTime(ctx, utcNow)
@@ -102,7 +106,10 @@ func GetIssueKey(ctx appengine.Context, issue *gcode.Issue) *datastore.Key {
 }
 
 func GetAllIssuesWithLabel(ctx appengine.Context, label string) ([]*gcode.Issue, error) {
-	return nil, nil
+	q := datastore.NewQuery("Issue")
+	issues := make([]*gcode.Issue, 0)
+	_, err := q.Filter("Labels =", label).GetAll(ctx, &issues)
+	return issues, err
 }
 
 func AddIssues(ctx appengine.Context, issues []*gcode.Issue) error {

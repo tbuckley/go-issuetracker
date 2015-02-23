@@ -23,11 +23,11 @@ func (f *Feed) NumPages() int {
 
 type Entry struct {
 	Title     string `xml:"title"`
-	Content   string `xml:"content"`
+	Content   string `xml:"content" datastore:",noindex"`
 	Published string `xml:"published"`
 	Updated   string `xml:"updated"`
 	Author    string `xml:"author>name"`
-	Links     []Link `xml:"link"`
+	Links     []Link `xml:"link"  datastore:",noindex"`
 }
 
 type Reply struct {
