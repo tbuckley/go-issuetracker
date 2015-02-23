@@ -1,0 +1,14 @@
+application: issues
+version: alpha-001
+runtime: go
+api_version: go1
+
+handlers:
+- url: /tasks/issues/reset
+  script: _go_app
+  login: admin
+- url: /tasks/issues/update
+  script: _go_app
+  login: admin
+- url: /.*
+  script: _go_app

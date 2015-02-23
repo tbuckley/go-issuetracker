@@ -1,0 +1,4 @@
+cron:
+- description: hourly update job
+  url: /tasks/issues/update
+  schedule: every 1 hour
