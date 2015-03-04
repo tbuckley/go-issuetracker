@@ -2,3 +2,15 @@
 	font-family: "Roboto", Helvetica, sans-serif;
 	font-size: 16px;
 }
+
+[card] {
+	background-color: #f1f1f1;
+	box-shadow: 0 2px 4px rgba(0,0,0,.3);
+	width: 128px;
+	height: 128px;
+	margin: 8px;
+}
+
+#label {
+	margin: 8px;
+}

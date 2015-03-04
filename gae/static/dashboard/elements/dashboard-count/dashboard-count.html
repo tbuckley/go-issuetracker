@@ -1,0 +1,17 @@
+<link rel="import" href="../../../components/polymer/polymer.html">
+
+<polymer-element name="dashboard-count" attributes="title count" layout vertical>
+	<template>
+		<link rel="stylesheet" href="dashboard-count.css" />
+		<div title layout vertical center>{{title}}</div>
+		<div count flex layout vertical center center-justified>{{count}}</div>
+		<div layout horizontal>
+			<content select="*"></content>
+		</div>
+	</template>
+	<script>
+		Polymer({
+
+		});
+	</script>
+</polymer-element>

@@ -7,6 +7,7 @@
 <link rel="import" href="../../../components/paper-spinner/paper-spinner.html">
 <link rel="import" href="../../../components/core-animated-pages/core-animated-pages.html">
 <link rel="import" href="../../../components/core-ajax/core-ajax.html">
+<link rel="import" href="../dashboard-count/dashboard-count.html">
 
 <polymer-element name="dashboard-app" attributes="" layout horizontal>
   <template>
@@ -39,13 +40,29 @@
               </div>
             </template>
             <template if="{{!loadingIssues}}">
-              <div card>
-                <div title>Total issues</div>
-                <div number>{{ issues.length }}</div>
+              <div layout horizontal wrap>
+                <div card layout vertical>
+                  <dashboard-count title="Total"
+                      count="{{issues.length}}" flex>
+                  </dashboard-count>
+                </div>
+                <div card layout vertical>
+                  <dashboard-count title="M43"
+                      count="{{reports.milestone[43].length}}" flex>
+                  </dashboard-count>
+                </div>
+                <div card layout vertical>
+                  <dashboard-count title="P1"
+                      count="{{reports.priority[1].length}}" flex>
+                  </dashboard-count>
+                </div>
               </div>
-              <div card>
-                <div title>Untriaged issues</div>
-                <div number>{{ reports.status["Untriaged"].length }}</div>
+
+
+              <div card layout vertical>
+                <dashboard-count title="Untriaged"
+                    count="{{reports.status['Untriaged'].length}}" flex>
+                </dashboard-count>
               </div>
             </template>
           </section>
@@ -78,6 +95,28 @@
         this.$.loadIssues.go();
       },
       issuesChanged: function() {
+        function labelsWithPrefix(issue, prefix) {
+          var labels = [];
+          issue.Labels.forEach(function(label) {
+            if(label.substr(0, prefix.length) == prefix) {
+              labels.push(label.substr(prefix.length));
+            }
+          });
+          return labels;
+        }
+        function getSingleLabel(labels) {
+          if(labels.length == 1) {
+            return labels[0];
+          }
+          return null;
+        }
+        function getMilestone(issue) {
+          return getSingleLabel(labelsWithPrefix(issue, "M-"));
+        }
+        function getPriority(issue) {
+          return getSingleLabel(labelsWithPrefix(issue, "Pri-"));
+        }
+
         function addToDict(map, key, issue) {
           if(!map.hasOwnProperty(key)) {
             map[key] = [];
@@ -89,9 +128,13 @@
           console.log("Generating");
           var reports = this.reports = {
             status: {},
+            milestone: {},
+            priority: {},
           };
           this.issues.forEach(function(issue) {
             addToDict(reports.status, issue.Status, issue);
+            addToDict(reports.milestone, getMilestone(issue), issue);
+            addToDict(reports.priority, getPriority(issue), issue);
           });
         }
       }

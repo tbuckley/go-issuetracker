@@ -1,6 +1,7 @@
 ## Status
 
 * Total bugs (week/month/quarter)
+* Current milestone
 * Bugs created vs. bugs resolved
 
 ## Cleanliness
