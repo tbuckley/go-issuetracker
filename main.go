@@ -12,8 +12,9 @@ import (
 )
 
 var (
-	secretsFile = flag.String("secrets", "", "Oauth secrets")
-	storageFile = flag.String("storage", "", "Oauth storage")
+	fSecretsFile = flag.String("secrets", "", "Oauth secrets")
+	fStorageFile = flag.String("storage", "", "Oauth storage")
+	fLabel       = flag.String("label", "cr-ui-settings", "Label to filter")
 )
 
 func DisplayGroupsByIntProperty(issues []*gcode.Issue, propFunc common.IntPropertyFunc) {
@@ -34,12 +35,12 @@ func DisplayGroupsByStringProperty(issues []*gcode.Issue, propFunc common.String
 func main() {
 	flag.Parse()
 
-	if *storageFile == "" || *secretsFile == "" {
+	if *fStorageFile == "" || *fSecretsFile == "" {
 		fmt.Println("Usage: ./go-issuetracker --secrets=SECRETFILE --storage=STORAGEFILE")
 		return
 	}
 
-	client, err := googauth.Authenticate(*storageFile, *secretsFile)
+	client, err := googauth.Authenticate(*fStorageFile, *fSecretsFile)
 	if err != nil {
 		panic(err)
 	}
@@ -48,18 +49,22 @@ func main() {
 
 	wg := query.NewWorkGroup(20)
 	q := wg.NewQuery("chromium").Client(client)
-	q = q.Label("cr-ui-settings")
+	q = q.Label(*fLabel)
 
-	issues, err := q.FetchAllIssues()
-	if err != nil {
-		fmt.Printf("Error: %v\n", err.Error())
-	} else {
-		fmt.Printf("Found: %v\n", len(issues))
+	issues := make([]*gcode.Issue, 0)
+	issueChan := q.FetchAllIssues()
+	for issue := range issueChan {
+		if issue.Error != nil {
+			fmt.Printf("Error: %v\n", err.Error())
+			return
+		}
+		issues = append(issues, issue.Issue)
 	}
+	fmt.Printf("Found: %v\n", len(issues))
 
 	priorityGroups := common.GroupIntProperty(issues, common.GetIssuePriority)
 	milestoneGroups := common.GroupIntProperty(issues, common.GetIssueMilestone)
-	starGroups := common.GroupIntProperty(issues, common.GetISsueStars)
+	starGroups := common.GroupIntProperty(issues, common.GetIssueStars)
 	ownerGroups := common.GroupStringProperty(issues, common.GetIssueOwner)
 	typeGroups := common.GroupStringProperty(issues, common.GetIssueType)
 	statusGroups := common.GroupStringProperty(issues, common.GetIssueStatus)

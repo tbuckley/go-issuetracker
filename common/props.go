@@ -55,7 +55,7 @@ func GetIssueMilestone(entry *gcode.Issue) (int, bool) {
 	return GetIssueLabelIntByPrefix(entry, "M-")
 }
 
-func GetISsueStars(entry *gcode.Issue) (int, bool) {
+func GetIssueStars(entry *gcode.Issue) (int, bool) {
 	return entry.Stars, true
 }
 

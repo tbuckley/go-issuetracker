@@ -2,6 +2,7 @@ package googauth
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -58,7 +59,7 @@ func startOauthHandler(config *oauth2.Config) chan *authorization {
 			Token:  token,
 		}
 
-		w.Write([]byte("Login successful!"))
+		w.Write([]byte("Login successful! You may now close this page."))
 	})
 	go func() {
 		log.Fatal(http.ListenAndServe(":8080", nil))
@@ -127,7 +128,9 @@ func Authenticate(storageFile, secretsFile string) (*http.Client, error) {
 
 	client, err := loadTokenClient(config, storageFile)
 	if err != nil {
-		authorization := <-startOauthHandler(config)
+		authChan := startOauthHandler(config)
+		fmt.Println("Visit http://localhost:8080 to log in")
+		authorization := <-authChan
 		err = storeToken(authorization.Token, storageFile)
 		if err != nil {
 			return nil, err
