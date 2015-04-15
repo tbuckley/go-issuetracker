@@ -49,13 +49,14 @@ func main() {
 
 	wg := query.NewWorkGroup(20)
 	q := wg.NewQuery("chromium").Client(client)
-	q = q.Label(*fLabel)
+	// q = q.Label(*fLabel)
+	q = q.Query("Cr:UI")
 
 	issues := make([]*gcode.Issue, 0)
 	issueChan := q.FetchAllIssues()
 	for issue := range issueChan {
 		if issue.Error != nil {
-			fmt.Printf("Error: %v\n", err.Error())
+			fmt.Printf("Error: %v\n", issue.Error.Error())
 			return
 		}
 		issues = append(issues, issue.Issue)
