@@ -44,14 +44,16 @@ type RepliesFeed struct {
 
 type Issue struct {
 	Entry
-	ID      int      `xml:"http://schemas.google.com/projecthosting/issues/2009 id"`
-	Labels  []string `xml:"label"`
-	Owner   string   `xml:"owner>username"`
-	CCs     []string `xml:"cc>username"`
-	Stars   int      `xml:"stars"`
-	State   string   `xml:"state"`
-	Status  string   `xml:"status"`
-	Replies []*Reply
+	ID        int      `xml:"http://schemas.google.com/projecthosting/issues/2009 id"`
+	Labels    []string `xml:"label"`
+	Owner     string   `xml:"owner>username"`
+	CCs       []string `xml:"cc>username"`
+	Stars     int      `xml:"stars"`
+	State     string   `xml:"state"`
+	Status    string   `xml:"status"`
+	BlockedOn []string `xml:"http://schemas.google.com/projecthosting/issues/2009 blockedOn>id"`
+	Blocking  []string `xml:"http://schemas.google.com/projecthosting/issues/2009 blocking>id"`
+	Replies   []*Reply
 }
 
 func (e *Issue) RepliesURL() (string, bool) {
